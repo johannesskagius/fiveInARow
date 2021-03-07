@@ -32,7 +32,7 @@ public class Main {
 
     private void testHorizontalScore () {
         ArrayList<Coordinate> x = getPossiblePlays ();
-        TreeSet<Coordinate> rank = calcHScores ( Node.Brick.PLAYER.value,x );
+        int rank = calcHScores ( Node.Brick.PLAYER.value,x );
     }
 
     private void addPlay () {
@@ -96,8 +96,7 @@ public class Main {
             while (!isAccepted) {
                 System.out.println ( "computer Make a Movee" );
                 //get the position
-                TreeSet<Coordinate> l = minMax ();
-                Coordinate computersChoice = l.first ();
+                int l = minMax (ALPHA_START_VALUE,BETA_START_VALUE);
                 isAccepted = isAccepted ( y,x );
             }
         }
@@ -110,13 +109,13 @@ public class Main {
         }
     }
 
-    private TreeSet<Coordinate> minMax () {
+    private int minMax (int alpa, int beta) {
         Coordinate bestMove;
         //Gets all the possible plays
         ArrayList<Coordinate> x = getPossiblePlays ();
 
         if (x.isEmpty ()) {
-            return null;
+            return 0;
         }
         if (depth == MAX_DEPTH) {
             return calcScore ( x );
@@ -126,7 +125,7 @@ public class Main {
         if (playersTurn) {
             //Loops through all possible plays
             for (Coordinate current : x) {
-                //Play the brick
+                //Play the brick on the board
                 isAccepted ( current.getX (),current.getY () );
 
 
@@ -134,16 +133,16 @@ public class Main {
         } else {
 
         }
-        return null;
+        return ;
     }
 
-    private TreeSet<Coordinate> calcScore (ArrayList<Coordinate> possiblePlays) {
+    private int calcScore (ArrayList<Coordinate> possiblePlays) {
         String player = Node.Brick.PLAYER.value;
         String computer = Node.Brick.COMPUTER.value;
         //countTheVerticalScore
         //countTheHorizontalScore
         //countTheDiagonalScore
-        TreeSet<Coordinate> x = calcHScores ( player,possiblePlays );//diagonalScore ( player, possiblePlays );// + horizontalScore ( player, possiblePlays ) + verticalScore ( player, possiblePlays );
+        int h = calcHScores ( player,possiblePlays ) + diagonalScore ( player, possiblePlays );// + horizontalScore ( player, possiblePlays ) + verticalScore ( player, possiblePlays );
         // int c = diagonalScore ( computer,possiblePlays ) + horizontalScore ( computer,possiblePlays ) + verticalScore ( computer, possiblePlays );
         return x;
     }
@@ -154,9 +153,8 @@ public class Main {
      * @param possiblePlays
      * @return
      */
-    private TreeSet<Coordinate> calcHScores (String findWho,ArrayList<Coordinate> possiblePlays) {
+    private int calcHScores (String findWho,ArrayList<Coordinate> possiblePlays )  {
         List<Coordinate> inRow = new LinkedList<> ();
-        TreeSet<Coordinate> rankedPlays = new TreeSet<> ();
         int score = 0;
         for (int i = 0; i < PLAYFIELDSIZE; i++) {
             for (int j = 0; j < PLAYFIELDSIZE; j++) {
@@ -166,31 +164,28 @@ public class Main {
                 } else {
                     if (inRow.isEmpty ()) {
                         inRow.add ( new Coordinate ( i,j ) );
-                        rankedPlays.add ( new Coordinate ( i,j,score ) );
                     } else {
                         //Add the coordinate before the streak and after the streak
                         if (inRow.get ( 0 ).getX () > 0 && score != 0) {
                             if (playField[i][inRow.get ( 0 ).getX () - 1].getStatus ().equals ( Node.Brick.NOTPLAYED.value )) {
                                 Coordinate before = new Coordinate ( inRow.get ( 0 ).getX () - 1,i,score );
-                                rankedPlays.add ( before );
+                                //rankedPlays.add ( before );
                             }
                         }
                         //Get the coordinate after the streak.
                         if (inRow.get ( inRow.size () - 1 ).getX () + 1 < PLAYFIELDSIZE) {
                             if (score != 0 && playField[i][inRow.get ( inRow.size () - 1 ).getX () + 1].getStatus ().equals ( Node.Brick.NOTPLAYED.value )) {
                                 Coordinate after = new Coordinate ( inRow.get ( inRow.size () - 1 ).getX () + 1,i,score );
-                                rankedPlays.add ( after );
+                                //rankedPlays.add ( after );
                             }
-                            score = 0;
+                            //score = 0;
                         }
                         inRow.clear ();
                     }
                 }
             }
-            //Reset the score for eachLap
-            score = 0;
         }
-        return rankedPlays;
+        return score;
     }
 
     /**
@@ -198,17 +193,41 @@ public class Main {
      * @param possiblePlays
      * @return
      */
-    private TreeSet<Coordinate> calcVScores (String findWho,ArrayList<Coordinate> possiblePlays) {
+    private int calcVScores (String findWho,ArrayList<Coordinate> possiblePlays) {
         List<Coordinate> inRow = new LinkedList<> ();
-        TreeSet<Coordinate> rankedPlays = new TreeSet<> ();
+        //TreeSet<Coordinate> rankedPlays = new TreeSet<> ();
         int score = 0;
         for (int i = 0; i < PLAYFIELDSIZE; i++) { // Columns
-            for(int j = 0 ; j < PLAYFIELDSIZE; j++){ //The rows
-
+            for (int j = 0; j < PLAYFIELDSIZE; j++) { //The rows
+                if (playField[j][i].getStatus ().equals ( findWho )) {
+                    inRow.add ( new Coordinate ( j,i ) );
+                    score++;
+                } else {
+                    if (inRow.isEmpty ()) {
+                        inRow.add ( new Coordinate ( j,i ) );
+                        //rankedPlays.add ( new Coordinate ( j,i,score ) );
+                    } else {
+                        //Add the coordinate above the streak if it's not less than 0
+                        if (inRow.get ( 0 ).getY () > 0 && score != 0) {
+                            if (playField[inRow.get ( 0 ).getY () - 1][i].getStatus ().equals ( Node.Brick.NOTPLAYED.value )) {
+                                Coordinate before = new Coordinate ( i,inRow.get ( 0 ).getY () - 1,score );
+                                //rankedPlays.add ( before );
+                            }
+                        }
+                        //Add the coordinate below the streak if it's not greater than 10
+                        if (inRow.get ( inRow.size () - 1 ).getY () + 1 < PLAYFIELDSIZE) {
+                            if (score != 0 && playField[inRow.get ( inRow.size () - 1 ).getY () + 1][j].getStatus ().equals ( Node.Brick.NOTPLAYED.value )) {
+                                Coordinate after = new Coordinate ( i,inRow.get ( inRow.size ()-1 ).getY () + 1,score );
+                                //rankedPlays.add ( after );
+                            }
+                            score = 0;
+                        }
+                        inRow.clear ();
+                    }
+                }
             }
-
         }
-        return rankedPlays;
+        return score;
     }
 
     private int diagonalScore (String findWho,ArrayList<Coordinate> possiblePlays) {
@@ -241,7 +260,7 @@ public class Main {
         else playersTurn = true;
     }
 
-    private boolean checkifWeHaveWinner (int y,int x) {
+    private boolean checkifWeHaveWinner (int y, int x) {
         int xPos = 0;
         int xMin = 0;
         int yPos = 0;
@@ -310,7 +329,6 @@ public class Main {
                     leftDown++;
                 else leftDown = 0;
             }
-
 
             if (xPos == 5 || xMin == 5 || yPos == 5 || yMin == 5 || rightUp == 5 || rightDown == 5 || leftDown == 5 || leftUp == 5) {
                 return true;
