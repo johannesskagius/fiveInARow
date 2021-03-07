@@ -14,7 +14,8 @@ public class Node {
     public enum Brick{
         PLAYER("W"),
         COMPUTER("B"),
-        NOTPLAYED("-");
+        NOTPLAYED("-"),
+        THISNODE("*");
 
         String value;
 

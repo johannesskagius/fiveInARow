@@ -2,13 +2,28 @@ package com.company;
 
 import java.util.Objects;
 
-public class Coordinate {
+public class Coordinate implements Comparable<Coordinate>{
     private int x;
     private int y;
+    private int coordinateValue;
 
-    public Coordinate (int x,int y) {
+    public Coordinate (int y,int x) {
         this.x = x;
         this.y = y;
+    }
+
+    public Coordinate (int x,int y,int coordinateValue) {
+        this.x = x;
+        this.y = y;
+        this.coordinateValue = coordinateValue;
+    }
+
+    public int getCoordinateValue () {
+        return coordinateValue;
+    }
+
+    public void setCoordinateValue (int coordinateValue) {
+        this.coordinateValue = coordinateValue;
     }
 
     public int getX () {
@@ -38,5 +53,10 @@ public class Coordinate {
     @Override
     public int hashCode () {
         return Objects.hash ( x,y );
+    }
+
+    @Override
+    public int compareTo (Coordinate o) {
+        return o.coordinateValue <= this.coordinateValue ? -1 : 1;
     }
 }
