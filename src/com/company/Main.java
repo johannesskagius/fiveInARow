@@ -4,30 +4,28 @@ package com.company;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.TreeSet;
 
 public class Main {
     private static final int ALPHA_START_VALUE = Integer.MIN_VALUE;
     private static final int BETA_START_VALUE = Integer.MAX_VALUE;
-    final int PLAYFIELDSIZE = 10;
-    private final int MAX_DEPTH = 3;
+    final int PLAYFIELDSIZE = 3;
+    private final int MAX_DEPTH = 10;
     private int depth = 0;
-    private Node[][] playField = new Node[10][10];
+    private Node[][] playField = new Node[PLAYFIELDSIZE][PLAYFIELDSIZE];
     private boolean playersTurn = true;
 
     public static void main (String[] args) {
         Main m = new Main ();
         m.addPlayField ();
-        m.addPlay ();
+        //m.addPlay ();
         m.printStacks ();
         //m.testHorizontalScore ();
-        m.testVerticalScore ();
-        //m.startGame ();
+        //m.testVerticalScore ();
+        m.startGame ();
     }
 
     private void testVerticalScore () {
         ArrayList<Coordinate> x = getPossiblePlays ();
-        TreeSet<Coordinate> rank = calcVScores ( Node.Brick.COMPUTER.value,x );
     }
 
     private void testHorizontalScore () {
@@ -93,47 +91,97 @@ public class Main {
                 isAccepted = isAccepted ( y,x );
             }
         } else { //Computers turn to make a move
-            while (!isAccepted) {
-                System.out.println ( "computer Make a Movee" );
-                //get the position
-                int l = minMax (ALPHA_START_VALUE,BETA_START_VALUE);
-                isAccepted = isAccepted ( y,x );
-            }
+            System.out.println ( "computer Make a Movee" );
+            //get the position
+            MoveInfo m = findCompMove ( 0,ALPHA_START_VALUE,BETA_START_VALUE );
+            isAccepted = isAccepted ( y,x );
         }
         if (checkifWeHaveWinner ( y,x )) {
             System.out.println ( "Winner" );
         } else {
             printStacks ();
-            switchPlayer ();
             play ();
         }
     }
 
-    private int minMax (int alpa, int beta) {
-        Coordinate bestMove;
-        //Gets all the possible plays
-        ArrayList<Coordinate> x = getPossiblePlays ();
+    private MoveInfo findCompMove (int depth,int alfa,int beta) {
+        int x = 0, repsonseValue = 0;
+        int value = 0;
+        Coordinate bestMove = null;
 
-        if (x.isEmpty ()) {
-            return 0;
+        if (depth == MAX_DEPTH) {
+            return new MoveInfo ( bestMove,value );
+        }
+        ArrayList<Coordinate> possiblePlays = getPossiblePlays ();
+        if (fullBoard ()) {
+            return new MoveInfo ( bestMove,0 );
+        }/* else if ((quickWin = immediateComWin ()) != null) {
+            return quickWin;
+        }*/ else {
+            value = -1;
+            for (int i = 0; i < possiblePlays.size (); i++) {
+                Coordinate position = possiblePlays.get ( i );
+                boolean isPlaced = isAccepted ( position.getY (),position.getX () );
+                repsonseValue = findHumanMove ( depth + 1,alfa,beta ).value;
+                unPlace ( position );
+
+                if (repsonseValue < beta) {
+                    beta = repsonseValue;
+                    bestMove = position;
+                }
+            }
+        }
+        return new MoveInfo ( bestMove,beta );
+    }
+
+    private boolean fullBoard () {
+        for (int i = 0; i < PLAYFIELDSIZE; i++) {
+            for (int j = 0; j < PLAYFIELDSIZE; j++) {
+                if (playField[i][j].getStatus ().equalsIgnoreCase ( "-" )) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    private MoveInfo findHumanMove (int depth,int alfa,int beta) {
+        int x = 0, responseValue;
+        int value = 0;
+        Coordinate bestMove = null;
+        ArrayList<Coordinate> possiblePlays = getPossiblePlays ();
+        if (depth > MAX_DEPTH) {
+            throw new IllegalArgumentException ();
         }
         if (depth == MAX_DEPTH) {
-            return calcScore ( x );
+            return new MoveInfo ( bestMove,value );
         }
+        if (fullBoard ()) {
+            return new MoveInfo ( bestMove,0 );
+        }/* else if ((quickWin = immediateComWin ()) != null) {
+            return quickWin;
+        }*/ else {
+            value = 1;
+            for (int i = 0; i < possiblePlays.size (); i++) {
+                Coordinate position = possiblePlays.get ( i );
+                boolean isPlaced = isAccepted ( position.getY (),position.getX () );
 
-        //Trying to minimize
-        if (playersTurn) {
-            //Loops through all possible plays
-            for (Coordinate current : x) {
-                //Play the brick on the board
-                isAccepted ( current.getX (),current.getY () );
+                responseValue = findCompMove ( depth + 1,alfa,beta ).value;
+                unPlace ( position );
 
+                if (responseValue > alfa) {
+                    alfa = responseValue;
+                    bestMove = position;
+                }
 
             }
-        } else {
-
         }
-        return ;
+        return new MoveInfo ( bestMove,alfa );
+    }
+
+    private void unPlace (Coordinate position) {
+        playField[position.getY ()][position.getX ()].setStatus ( Node.Brick.NOTPLAYED );
+        printStacks ();
     }
 
     private int calcScore (ArrayList<Coordinate> possiblePlays) {
@@ -142,9 +190,9 @@ public class Main {
         //countTheVerticalScore
         //countTheHorizontalScore
         //countTheDiagonalScore
-        int h = calcHScores ( player,possiblePlays ) + diagonalScore ( player, possiblePlays );// + horizontalScore ( player, possiblePlays ) + verticalScore ( player, possiblePlays );
+        int h = calcHScores ( player,possiblePlays ) + diagonalScore ( player,possiblePlays );// + horizontalScore ( player, possiblePlays ) + verticalScore ( player, possiblePlays );
         // int c = diagonalScore ( computer,possiblePlays ) + horizontalScore ( computer,possiblePlays ) + verticalScore ( computer, possiblePlays );
-        return x;
+        return 0;
     }
 
 
@@ -153,7 +201,7 @@ public class Main {
      * @param possiblePlays
      * @return
      */
-    private int calcHScores (String findWho,ArrayList<Coordinate> possiblePlays )  {
+    private int calcHScores (String findWho,ArrayList<Coordinate> possiblePlays) {
         List<Coordinate> inRow = new LinkedList<> ();
         int score = 0;
         for (int i = 0; i < PLAYFIELDSIZE; i++) {
@@ -217,7 +265,7 @@ public class Main {
                         //Add the coordinate below the streak if it's not greater than 10
                         if (inRow.get ( inRow.size () - 1 ).getY () + 1 < PLAYFIELDSIZE) {
                             if (score != 0 && playField[inRow.get ( inRow.size () - 1 ).getY () + 1][j].getStatus ().equals ( Node.Brick.NOTPLAYED.value )) {
-                                Coordinate after = new Coordinate ( i,inRow.get ( inRow.size ()-1 ).getY () + 1,score );
+                                Coordinate after = new Coordinate ( i,inRow.get ( inRow.size () - 1 ).getY () + 1,score );
                                 //rankedPlays.add ( after );
                             }
                             score = 0;
@@ -234,12 +282,16 @@ public class Main {
         return 0;
     }
 
+    /**
+     *
+     * @return
+     */
     private ArrayList<Coordinate> getPossiblePlays () {
         ArrayList<Coordinate> possiblePlays = new ArrayList<> ();
         final String NOTPLAYED = Node.Brick.NOTPLAYED.value;
         for (int i = 0; i < PLAYFIELDSIZE; i++) {
             for (int j = 0; j < PLAYFIELDSIZE; j++) {
-                if (playField[i][j].toString ().equals ( NOTPLAYED )) {
+                if (playField[i][j].getStatus ().equals ( NOTPLAYED )) {
                     possiblePlays.add ( new Coordinate ( i,j ) );
                 }
             }
@@ -247,20 +299,37 @@ public class Main {
         return possiblePlays;
     }
 
+    /**
+     *
+     * @param y
+     * @param x
+     * @return
+     */
     private boolean isAccepted (int y,int x) {
         if (playField[y][x].toString ().equals ( "|" + Node.Brick.NOTPLAYED + "|" )) {
             playField[y][x].setStatus ( getWhosTurn () );
+            printStacks ();
+            switchPlayer ();
             return true;
         }
         return false;
     }
 
+    /**
+     * Flips to the next persons turn
+     */
     private void switchPlayer () {
         if (playersTurn) playersTurn = false;
         else playersTurn = true;
     }
 
-    private boolean checkifWeHaveWinner (int y, int x) {
+    /**
+     *
+     * @param y
+     * @param x
+     * @return
+     */
+    private boolean checkifWeHaveWinner (int y,int x) {
         int xPos = 0;
         int xMin = 0;
         int yPos = 0;
@@ -350,7 +419,15 @@ public class Main {
     }
 
     private void printStacks () {
-        System.out.println ( "t" + "|" + 0 + "||" + 1 + "||" + 2 + "||" + 3 + "||" + 4 + "||" + 5 + "||" + 6 + "||" + 7 + "||" + 8 + "||" + 9 + "|" );
+        String x = "";
+        for(int i = 0; i < PLAYFIELDSIZE; i++){
+            if(i==0){
+                x = "t" + "|";
+            }
+            x = i + "||";
+            System.out.print (x);
+        }
+        //System.out.println ( "t" + "|" + 0 + "||" + 1 + "||" + 2 + "||" + 3 + "||" + 4 + "||" + 5 + "||" + 6 + "||" + 7 + "||" + 8 + "||" + 9 + "|" );
         int column = 1;
         int row = 0;
         String s = row + "";
@@ -360,6 +437,16 @@ public class Main {
                 System.out.print ( n[i] );
             }
             System.out.println ();
+        }
+    }
+
+    private class MoveInfo {
+        private Coordinate move;
+        private int value;
+
+        public MoveInfo (Coordinate move,int value) {
+            this.move = move;
+            this.value = value;
         }
     }
 }
