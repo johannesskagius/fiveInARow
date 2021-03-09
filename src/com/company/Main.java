@@ -8,9 +8,9 @@ import java.util.List;
 public class Main {
     private static final int ALPHA_START_VALUE = Integer.MIN_VALUE;
     private static final int BETA_START_VALUE = Integer.MAX_VALUE;
-    final int PLAYFIELDSIZE = 4;
+    final int PLAYFIELDSIZE = 5;
     private final int MAX_DEPTH = 10;
-    private int ROW_TO_WIN = PLAYFIELDSIZE -1;/// 2;
+    private int ROW_TO_WIN = PLAYFIELDSIZE - 1;/// 2;
     private int depth = 0;
     private Node[][] playField = new Node[PLAYFIELDSIZE][PLAYFIELDSIZE];
     private boolean playersTurn = true;
@@ -21,6 +21,7 @@ public class Main {
         Main m = new Main ();
         m.addPlayField ();
         // m.addPlay ();
+      //  m.addPlay2 ();
         m.printStacks ();
         //m.testHorizontalScore ();
         //m.testVerticalScore ();
@@ -28,6 +29,23 @@ public class Main {
         // int i = m.getPlayFieldScore ();
         //System.out.println (i);
         //m.leftTopToRightBottomAndRight(Node.Brick.PLAYER.value );
+//        int i = m.horizontalScore ( Node.Brick.PLAYER.value );
+//        int j = m.verticalScore ( Node.Brick.PLAYER.value );
+//        int x = m.leftTopToRightBottomAndRight ( Node.Brick.PLAYER.value );
+//        int z = m.leftTopToRightBottomAndLeft ( Node.Brick.PLAYER.value );
+//        int y = m.rightTopToLeftBottomAndLeft ( Node.Brick.PLAYER.value );
+//        int k = m.rightTopToLeftBottomAndRight ( Node.Brick.PLAYER.value );
+    }
+
+    private void addPlay2 () {
+        for(int i = 0; i < PLAYFIELDSIZE; i++){
+            if(i % 2 == 0){
+                playField[i][3-i].setStatus ( Node.Brick.PLAYER );
+                playField[i+1][3-i].setStatus ( Node.Brick.COMPUTER );
+            }
+        }
+        playField[2][2].setStatus ( Node.Brick.PLAYER );
+        playField[1][2].setStatus ( Node.Brick.PLAYER );
     }
 
     private void addPlay () {
@@ -95,8 +113,8 @@ public class Main {
         //get the position
         long start = System.currentTimeMillis ();
         int i = findCompMove ( 0,ALPHA_START_VALUE,BETA_START_VALUE );
-        System.out.println ((System.currentTimeMillis () - start) + "ms" );
-        isAccepted = isAccepted ( Node.Brick.COMPUTER, computerMove.getY (),computerMove.getX () );
+        System.out.println ( (System.currentTimeMillis () - start) + "ms" );
+        isAccepted = isAccepted ( Node.Brick.COMPUTER,computerMove.getY (),computerMove.getX () );
         printStacks ();
 
         if (checkifWeHaveWinner ( y,x )) {
@@ -181,76 +199,76 @@ public class Main {
 
     private int horizontalScore (String player) {
         int score = 0;
-        int topScore = 0;
         List<Coordinate> inARow = new LinkedList<> ();
         for (int i = 0; i < PLAYFIELDSIZE; i++) {
             for (int j = 0; j < PLAYFIELDSIZE; j++) {
                 if (playField[j][i].getStatus ().equals ( player )) {
                     inARow.add ( new Coordinate ( i,j ) );
-                } else if(!inARow.isEmpty ()){
-                    //Check the coordinate before
-                    //Check the coordinate after
-                    score += calculateScore(inARow, new Coordinate ( j, i-1 ), new Coordinate ( j, i+1 ) );
+                } else if (!inARow.isEmpty ()) {
+                    //Get the coordinate before
+                    Coordinate before = new Coordinate ( inARow.get ( 0 ).getY (),inARow.get ( 0 ).getX () - 1 );
+                    //Get the coordinate after
+                    Coordinate after = new Coordinate ( inARow.get ( inARow.size () - 1 ).getY (),inARow.get ( inARow.size () - 1 ).getX () - 1 );
+                    score += calculateScore ( inARow,before,after );
                     inARow.clear ();
-                }
-                if (score > topScore) {
-                    topScore = score;
-                }
-                if (topScore == ROW_TO_WIN) {
-                    return 50;
                 }
             }
         }
-        return topScore;
+        return score;
     }
 
-    private int calculateScore(List<Coordinate> inARow, Coordinate beforeStart, Coordinate afterEnd) {
+    private int calculateScore (List<Coordinate> inARow,Coordinate beforeStart,Coordinate afterEnd) {
         int score = 0;
-        boolean isBeforeStartEmpty = checkNode(beforeStart);
-        boolean isAfterEndEmpty = checkNode( afterEnd );
+        boolean isBeforeStartEmpty;
+        boolean isAfterEndEmpty;
+        try {
+            isBeforeStartEmpty = checkNode ( beforeStart );
+        } catch (ArrayIndexOutOfBoundsException e) {
+            isBeforeStartEmpty = false;
+        }
+        try {
+            isAfterEndEmpty = checkNode ( afterEnd );
+        } catch (ArrayIndexOutOfBoundsException e) {
+            isAfterEndEmpty = false;
+        }
         if (isBeforeStartEmpty || isAfterEndEmpty) {
-            score += calculateListScore(inARow);
+            score += calculateListScore ( inARow );
             if (isBeforeStartEmpty && isAfterEndEmpty) {
                 score += 10;
             }
         }
-        return score;
+        return inARow.size ()+score;
     }
 
     private int calculateListScore (List<Coordinate> inARow) {
-        int score =1;
-        for(Coordinate c : inARow)
+        int score = 1;
+        for (Coordinate c : inARow)
             score *= 10;
         return score;
     }
 
-    private boolean checkNode (Coordinate coordinate) {
-        return playField[coordinate.getY ()][coordinate.getX ()].getStatus ().equals ( Node.Brick.NOTPLAYED );
+    private boolean checkNode (Coordinate coordinate) throws ArrayIndexOutOfBoundsException {
+        return playField[coordinate.getY ()][coordinate.getX ()].getStatus ().equals ( Node.Brick.NOTPLAYED.value );
     }
 
     private int verticalScore (String player) {
         int score = 0;
-        int topScore = 0;
         List<Coordinate> inARow = new LinkedList<> ();
         for (int i = 0; i < PLAYFIELDSIZE; i++) {
             for (int j = 0; j < PLAYFIELDSIZE; j++) {
                 if (playField[i][j].getStatus ().equals ( player )) {
                     inARow.add ( new Coordinate ( i,j ) );
-                } else if(!inARow.isEmpty ()) {
-                    //Check the coordinate before
-                    //Check the coordinate after
-                    score += calculateScore(inARow, new Coordinate ( j, i-1 ), new Coordinate ( j, i+1 ) );
+                } else if (!inARow.isEmpty ()) {
+                    //Get the coordinate before
+                    Coordinate before = new Coordinate ( inARow.get ( 0 ).getY () - 1,inARow.get ( 0 ).getX () );
+                    //Get the coordinate after
+                    Coordinate after = new Coordinate ( inARow.get ( inARow.size () - 1 ).getY () - 1,inARow.get ( inARow.size () - 1 ).getX () );
+                    score += calculateScore ( inARow,before,after );
                     inARow.clear ();
-                }
-                if (score > topScore) {
-                    topScore = score;
-                }
-                if (topScore == ROW_TO_WIN) {
-                    return 50;
                 }
             }
         }
-        return topScore;
+        return score;
     }
 
     private boolean fullBoard () {
@@ -275,14 +293,13 @@ public class Main {
         int y = 0;
         int score = 0;
         int count = 0;
-        int topScore = 0;
+        List<Coordinate> inARow = new LinkedList<> ();
+
         for (int i = 1; i <= PLAYFIELDSIZE - 1; i++) {   //Yvärdet börjar ifrån 0 och går neråt på kartan
             x = PLAYFIELDSIZE - 1;
             for (int j = PLAYFIELDSIZE; j > 0; j--) { //Xvärdet börjar ifrån storleken på kartan - i
                 if (x > -1 && y < PLAYFIELDSIZE) {
-                    if (playField[y][x].getStatus ().equals ( player )) {
-                        score++;
-                    }
+                    score = getScore ( player,x,y,score,inARow );
                     //playField[y][x].setStatus ( Node.Brick.THISNODE );
                     y++;
                     x--;
@@ -290,19 +307,26 @@ public class Main {
                 }
             }
             if (count < ROW_TO_WIN) {
-                return topScore;
-            }
-            if (score > topScore) {
-                topScore = score;
-            }
-            if (topScore == ROW_TO_WIN) {
-                return 50;
+                break;
             }
             y = i;
-            score = 0;
             count = 0;
         }
-        return 0;
+        return score;
+    }
+
+    private int getScore (String player,int x,int y,int score,List<Coordinate> inARow) {
+        if (playField[y][x].getStatus ().equals ( player )) {
+            inARow.add ( new Coordinate ( y,x ) );
+        } else if (!inARow.isEmpty ()) {
+            //Get the coordinate before
+            Coordinate before = new Coordinate ( inARow.get ( 0 ).getY () - 1,inARow.get ( 0 ).getX () + 1 );
+            //Get the coordinate after
+            Coordinate after = new Coordinate ( inARow.get ( inARow.size () - 1 ).getY () + 1,inARow.get ( inARow.size () - 1 ).getX () );
+            score += calculateScore ( inARow,before,after );
+            inARow.clear ();
+        }
+        return score;
     }
 
     private int rightTopToLeftBottomAndLeft (String player) {
@@ -310,13 +334,21 @@ public class Main {
         int y = 0;
         int score = 0;
         int count = 0;
-        int topScore = 0;
+        List<Coordinate> inARow = new LinkedList<> ();
+
         for (int i = 1; i <= PLAYFIELDSIZE - 1; i++) {   //Yvärdet börjar ifrån 0 och går neråt på kartan
             x = PLAYFIELDSIZE - i;
             for (int j = PLAYFIELDSIZE; j > 0; j--) { //Xvärdet börjar ifrån storleken på kartan - i
                 if (x != -1) {
                     if (playField[y][x].getStatus ().equals ( player )) {
-                        score++;
+                        inARow.add ( new Coordinate ( y,x ) );
+                    } else if (!inARow.isEmpty ()) {
+                        //Get the coordinate before
+                        Coordinate before = new Coordinate ( inARow.get ( 0 ).getY () - 1,inARow.get ( 0 ).getX ()+1 );
+                        //Get the coordinate after
+                        Coordinate after = new Coordinate ( inARow.get ( inARow.size () - 1 ).getY () + 1,inARow.get ( inARow.size () - 1 ).getX () );
+                        score += calculateScore ( inARow,before,after );
+                        inARow.clear ();
                     }
                     //playField[y][x].setStatus ( Node.Brick.THISNODE );
                     y++;
@@ -326,18 +358,11 @@ public class Main {
             }
             y = 0;
             if (count < ROW_TO_WIN) {
-                return topScore;
+                break;
             }
-            if (score > topScore) {
-                topScore = score;
-            }
-            if (topScore == ROW_TO_WIN) {
-                return 50;
-            }
-            score = 0;
             count = 0;
         }
-        return 0;
+        return score;
     }
 
     private int leftTopToRightBottomAndLeft (String player) {
@@ -346,14 +371,22 @@ public class Main {
         int score = 0;
         int count = 0;
         int topScore = 0;
+        List<Coordinate> inARow = new LinkedList<> ();
+
         for (int i = 0; i <= PLAYFIELDSIZE - 1; i++) {   //Yvärdet börjar ifrån 0 och går neråt på kartan
             x = i;  //TODO KOLLA OM DENNA BEHÖVS
             for (int j = 0; j < PLAYFIELDSIZE; j++) { //Xvärdet börjar ifrån storleken på kartan - i
                 if (x < PLAYFIELDSIZE) {
                     if (playField[y][x].getStatus ().equals ( player )) {
-                        score++;
+                        inARow.add ( new Coordinate ( y,x ) );
+                    } else if (!inARow.isEmpty ()) {
+                        //Get the coordinate before
+                        Coordinate before = new Coordinate ( inARow.get ( 0 ).getY () - 1,inARow.get ( 0 ).getX ()+1 );
+                        //Get the coordinate after
+                        Coordinate after = new Coordinate ( inARow.get ( inARow.size () - 1 ).getY () + 1,inARow.get ( inARow.size () - 1 ).getX ()+1 );
+                        score += calculateScore ( inARow,before,after );
+                        inARow.clear ();
                     }
-                    //playField[y][x].setStatus ( Node.Brick.THISNODE );
                     y++;
                     x++; //TODO KOLLA OM DENNA BEHÖVS
                     count++;
@@ -361,18 +394,11 @@ public class Main {
             }
             y = 0;
             if (count < ROW_TO_WIN) {
-                return topScore;
+                break;
             }
-            if (score > topScore) {
-                topScore = score;
-            }
-            if (topScore == ROW_TO_WIN) {
-                return 50;
-            }
-            score = 0;
             count = 0;
         }
-        return 0;
+        return score;
     }
 
     private int leftTopToRightBottomAndRight (String player) {
@@ -381,12 +407,21 @@ public class Main {
         int score = 0;
         int count = 0;
         int topScore = 0;
+        List<Coordinate> inARow = new LinkedList<> ();
+
         for (int i = 0; i <= PLAYFIELDSIZE - 1; i++) {   //Yvärdet börjar ifrån 0 och går neråt på kartan
             y = i;  //TODO KOLLA OM DENNA BEHÖVS
             for (int j = 0; j < PLAYFIELDSIZE; j++) { //Xvärdet börjar ifrån storleken på kartan - i
                 if (y < PLAYFIELDSIZE) {
                     if (playField[y][x].getStatus ().equals ( player )) {
-                        score++;
+                        inARow.add ( new Coordinate ( y,x ) );
+                    } else if (!inARow.isEmpty ()) {
+                        //Get the coordinate before
+                        Coordinate before = new Coordinate ( inARow.get ( 0 ).getY () - 1,inARow.get ( 0 ).getX ()+1 );
+                        //Get the coordinate after
+                        Coordinate after = new Coordinate ( inARow.get ( inARow.size () - 1 ).getY () + 1,inARow.get ( inARow.size () - 1 ).getX ()+1 );
+                        score += calculateScore ( inARow,before,after );
+                        inARow.clear ();
                     }
                     y++;
                     x++; //TODO KOLLA OM DENNA BEHÖVS
@@ -395,18 +430,11 @@ public class Main {
             }
             x = 0;
             if (count < ROW_TO_WIN) {
-                return topScore;
+                break;
             }
-            if (score > topScore) {
-                topScore = score;
-            }
-            if (topScore == ROW_TO_WIN) {
-                return 50;
-            }
-            score = 0;
             count = 0;
         }
-        return 0;
+        return score;
     }
 
     private ArrayList<Coordinate> possiblePlaysLimited () {
