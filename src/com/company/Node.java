@@ -12,8 +12,8 @@ public class Node {
     }
 
     public enum Brick{
-        PLAYER("W"),
-        COMPUTER("B"),
+        PLAYER("P"),
+        COMPUTER("C"),
         NOTPLAYED("-"),
         THISNODE("*");
 
